@@ -1,7 +1,16 @@
 import React, { Component } from "react";
 import { Button, Form, Input } from "antd";
-import firebase from "../firebase.js";
+import { farmRef, locationRef } from "API/databases.js";
 import GeoFire from "geofire";
+import { connect } from "react-redux";
+import { geocode } from "../Actions/Geocode";
+import GEOCODE_KEY from "../API/GoogleConfig";
+
+const mapDispatchToProps = dispatch => {
+  return {
+    geocode: address => dispatch(geocode(address))
+  };
+};
 
 const FormItem = Form.Item;
 
@@ -10,39 +19,39 @@ class AddFarm extends Component {
     super(props);
     this.state = {};
   }
-
+  //TODO: find a way to differentiate geocode request here vs userAddress, add items to list
   handleSubmit = event => {
     event.preventDefault();
-    const farmRef = firebase.database().ref("Farms");
-    const geofire = new GeoFire(firebase.database().ref("Locations"));
+    const geofire = new GeoFire(locationRef);
     this.props.form.validateFieldsAndScroll((err, values) => {
       if (!err) {
         let loc = values["location"];
+        let url = `https://maps.googleapis.com/maps/api/geocode/json?address=${loc}&key=${GEOCODE_KEY}`;
         let key = farmRef.push(values).key;
-        this.props.geocoder.geocode({ address: loc }, function(
-          results,
-          status
-        ) {
-          if (status === "OK") {
-            geofire
-              .set(key, [
-                results[0].geometry.location.lat(),
-                results[0].geometry.location.lng()
-              ])
-              .then(
-                function() {
-                  console.log("Success!");
-                },
-                function(error) {
-                  console.log("Error: " + error);
-                }
+        fetch(url)
+          .then(resp => resp.json())
+          .then(data => {
+            if (data.status === "OK") {
+              geofire
+                .set(key, [
+                  data.results[0].geometry.location.lat,
+                  data.results[0].geometry.location.lng
+                ])
+                .then(
+                  function() {
+                    console.log("Success!");
+                  },
+                  function(error) {
+                    console.log("Error: " + error);
+                  }
+                );
+            } else {
+              alert(
+                "Geocode was not successful for the following reason: " +
+                  data.status
               );
-          } else {
-            alert(
-              "Geocode was not successful for the following reason: " + status
-            );
-          }
-        });
+            }
+          });
       }
     });
   };
@@ -135,6 +144,9 @@ class AddFarm extends Component {
   }
 }
 
-const WrappedAddFarm = Form.create()(AddFarm);
+const WrappedAddFarm = connect(
+  null,
+  mapDispatchToProps
+)(Form.create()(AddFarm));
 
 export default WrappedAddFarm;

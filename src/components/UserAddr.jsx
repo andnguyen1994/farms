@@ -7,39 +7,18 @@ const Option = Select.Option;
 class UserAddr extends Component {
   constructor(props) {
     super(props);
-    this.state = {
-      value: "Fill in Address"
-    };
   }
-
+  //Needs to cancel previous geoquery and then push new query
   handleSubmit = event => {
     event.preventDefault();
-    this.props.geocoder.geocode(
-      { address: this.props.form.getFieldValue("userAddr") },
-      (results, status) => {
-        if (status === "OK") {
-          let userCoords = [
-            results[0].geometry.location.lat(),
-            results[0].geometry.location.lng()
-          ];
-          this.props.getFarmLocations(userCoords);
-        } else {
-          alert(
-            "Geocode was not successful for the following reason: " + status
-          );
-        }
-      }
+    this.props.sendUserInfo(
+      this.props.form.getFieldValue("userAddr"),
+      Number(this.props.form.getFieldValue("range"))
     );
   };
 
   render() {
     const { getFieldDecorator } = this.props.form;
-
-    const formItemLayout = {
-      wrapperCol: {
-        span: 30
-      }
-    };
 
     const tailFormItemLayout = {
       wrapperCol: {
@@ -47,9 +26,13 @@ class UserAddr extends Component {
         offset: 4
       }
     };
+    const divStyle = {
+      display: "inline-block",
+      padding: "50px"
+    };
 
     return (
-      <div>
+      <div style={divStyle}>
         <Form layout="inline" onSubmit={this.handleSubmit}>
           <FormItem>
             {getFieldDecorator("userAddr", {
@@ -58,11 +41,11 @@ class UserAddr extends Component {
                   type: "string"
                 }
               ]
-            })(<Input placeholder="Address" />)}
+            })(<Input style={{ width: 300 }} placeholder="Address" />)}
           </FormItem>
           <FormItem>
-            {getFieldDecorator("range")(
-              <Select placeholder="Please select range">
+            {getFieldDecorator("range", { initialValue: "10" })(
+              <Select style={{ width: 100 }}>
                 <Option value="10">10 Miles</Option>
                 <Option value="25">25 Miles</Option>
                 <Option value="50">50 Miles</Option>

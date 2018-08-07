@@ -1,126 +1,146 @@
 import React, { Component } from "react";
-import firebase from "../firebase.js";
+import { connect } from "react-redux";
+import { farmRef, locationRef } from "API/databases.js";
 import GeoFire from "geofire";
-import GetFarms from "./GetFarms.jsx";
-import WrappedUserAddr from "./UserAddr";
-import { Layout, Row, Col } from "antd";
-import WrappedAddFarm from "./AddFarm";
-
-/* global google */
+import { geocode } from "Actions/Geocode";
+import setGeoQuery from "Actions/Geoquery.jsx";
+import getFarmKeys from "Actions/GetFarmKeys";
+import UserAddr from "components/UserAddr.jsx";
+import GetFarms from "components/GetFarms.jsx";
+import { Layout, Row, Col, Menu } from "antd";
+import getFarmData from "Actions/GetFarmData.jsx";
+import { Route, Switch, Link } from "react-router-dom";
+import history from "History.jsx";
 
 const { Header, Content, Footer } = Layout;
 
-class Main extends Component {
+const mapStateToProps = state => {
+  return {
+    userCoords: [state.geocodeReducer.lat, state.geocodeReducer.lng],
+    address: state.geocodeReducer.address,
+    geoQueryStatus: state.geoQueryReducer.onStatus,
+    farmsTableData: getFarmsTableData(
+      state.farmKeyReducer.farmKeys,
+      state.farmDataReducer.farmData
+    ),
+    queryUserCoords: state.geoQueryReducer.userCoords,
+    range: state.geoQueryReducer.range
+  };
+};
+
+const mapDispatchToProps = dispatch => {
+  return {
+    getFarmData: (status, farmData) => dispatch(getFarmData(status, farmData)),
+    geocode: address => dispatch(geocode(address)),
+    getFarmKeys: (status, farmKeys) => dispatch(getFarmKeys(status, farmKeys)),
+    setGeoQuery: (type, address, userCoords, range) =>
+      dispatch(setGeoQuery(type, address, userCoords, range))
+  };
+};
+
+const getFarmsTableData = (farmKeys, farms) => {
+  let farmsTableData = [];
+  for (let i in farmKeys) {
+    let key = farmKeys[i].key;
+    farmsTableData.push({
+      key: key,
+      name: <Link to={`/Farms/${key}`}>{farms[key].name}</Link>,
+      email: farms[key].email,
+      location: farms[key].location,
+      website: farms[key].website,
+      distance: farmKeys[i].distance
+    });
+  }
+  return farmsTableData;
+};
+
+class ConnectedMain extends Component {
   constructor(props) {
     super(props);
-    this.state = {
-      geocoder: "",
-      farmLocations: [],
-      renderTable: false
-    };
-  }
-
-  getGoogleMaps() {
-    // If we haven't already defined the promise, define it
-    if (!this.googleMapsPromise) {
-      this.googleMapsPromise = new Promise(resolve => {
-        // Add a global handler for when the API finishes loading
-        window.resolveGoogleMapsPromise = () => {
-          // Resolve the promise
-          resolve(google);
-
-          // Tidy up
-          delete window.resolveGoogleMapsPromise;
-        };
-
-        // Load the Google Maps API
-        const script = document.createElement("script");
-        const API = "AIzaSyDiOLnnxOtekMQjLEnVPNgnL2rIUbsFv24";
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${API}&callback=resolveGoogleMapsPromise`;
-        script.async = true;
-        document.body.appendChild(script);
-      });
-    }
-
-    // Return a promise for the Google Maps API
-    return this.googleMapsPromise;
-  }
-
-  componentWillMount() {
-    // Start Google Maps API loading since we know we'll soon need it
-    this.getGoogleMaps();
+    this.geoQuery = "";
   }
 
   componentDidMount() {
-    // Once the Google Maps API has finished loading, initialize the map
-    this.getGoogleMaps().then(google => {
-      let geocoder = new google.maps.Geocoder();
-      this.setState({ geocoder: geocoder });
+    //On receiving updated snapshot, update the local database, then update the display.
+    farmRef.on("value", snapshot => {
+      let farms = snapshot.val();
+      this.props.getFarmData("FARMS_SUCCESS", farms);
     });
+    if (this.props.geoQueryStatus) {
+      this.props.getFarmKeys("KEY_RESET");
+      this.geoQuery = new GeoFire(locationRef).query({
+        center: this.props.queryUserCoords,
+        radius: this.props.range
+      });
+      this.geoQuery.on("key_entered", (key, location, distance) => {
+        this.props.getFarmKeys("KEY_SUCCESS", { key: key, distance: distance });
+      });
+    }
   }
 
-  getFarmLocations = userCoords => {
-    this.setState({ renderTable: true });
-    let geoQuery = new GeoFire(firebase.database().ref("Locations")).query({
-      center: userCoords,
-      radius: 10
+  getFarmLocations = async (address, range) => {
+    if (this.geoQuery) {
+      this.geoQuery.cancel();
+      this.props.getFarmKeys("KEY_RESET");
+    }
+    await this.props.geocode(address);
+    this.geoQuery = await new GeoFire(locationRef).query({
+      center: this.props.userCoords,
+      radius: range
     });
-    console.log(geoQuery.center());
-    geoQuery.on("ready", function() {
-      console.log(
-        "GeoQuery has loaded and fired all other events for initial data"
-      );
+    this.geoQuery.on("key_entered", (key, location, distance) => {
+      this.props.getFarmKeys("KEY_SUCCESS", { key: key, distance: distance });
     });
-    geoQuery.on("key_entered", (key, location, distance) => {
-      let farmLocations = this.state.farmLocations;
-      farmLocations.push(key);
-      this.setState({ farmLocations: farmLocations });
-    });
+    this.props.setGeoQuery(
+      "NEW_GEOQUERY",
+      this.props.address,
+      this.props.userCoords,
+      range
+    );
+    history.push("/Main/Search");
   };
 
-  test = () => {
-    if (this.state.renderTable === true) {
-      console.log("test");
-      return <GetFarms locations={this.state.farmLocations} />;
+  //History
+  renderTable = () => {
+    if (!this.props.geoQueryStatus) {
+      return <UserAddr sendUserInfo={this.getFarmLocations} />;
+    } else {
+      return null;
     }
-    return null;
   };
+
+  componentWillUnmount() {
+    console.log("test");
+    farmRef.off();
+    if (this.geoQuery) {
+      this.geoQuery.cancel();
+    }
+  }
 
   render() {
-    let table;
-    if (this.state.renderTable === true) {
-      table = <GetFarms locations={this.state.farmLocations} />;
-    } else {
-      table = null;
-    }
     return (
-      <React.Fragment>
-        <Layout className="layout">
-          <Header>
-            <div>
-              <Row>
-                <Col offset={6}>
-                  {" "}
-                  <WrappedUserAddr
-                    geocoder={this.state.geocoder}
-                    getFarmLocations={this.getFarmLocations}
-                  />
-                </Col>
-              </Row>
-            </div>
-          </Header>
-          <Content style={{ padding: "0 50px" }}>
-            <div style={{ background: "#fff", padding: 24, minHeight: 280 }}>
-              {" "}
-              <WrappedAddFarm geocoder={this.state.geocoder} />
-              {table}
-            </div>
-          </Content>
-          <Footer style={{ textAlign: "center" }} />
-        </Layout>,
-      </React.Fragment>
+      <div>
+        <Switch>
+          <Route
+            exact
+            path="/Main"
+            render={() => <UserAddr sendUserInfo={this.getFarmLocations} />}
+          />
+          <Route
+            path="/Main/Search"
+            render={() => (
+              <GetFarms farmsTableData={this.props.farmsTableData} />
+            )}
+          />
+        </Switch>
+      </div>
     );
   }
 }
+
+const Main = connect(
+  mapStateToProps,
+  mapDispatchToProps
+)(ConnectedMain);
 
 export default Main;
