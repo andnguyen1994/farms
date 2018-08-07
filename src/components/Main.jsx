@@ -100,15 +100,6 @@ class ConnectedMain extends Component {
     history.push("/Main/Search");
   };
 
-  //History
-  renderTable = () => {
-    if (!this.props.geoQueryStatus) {
-      return <UserAddr sendUserInfo={this.getFarmLocations} />;
-    } else {
-      return null;
-    }
-  };
-
   componentWillUnmount() {
     console.log("test");
     farmRef.off();

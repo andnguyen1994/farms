@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { Button, Form, Input } from "antd";
+import { Button, Form, Input, notification } from "antd";
 import { farmRef, locationRef } from "API/databases.js";
 import GeoFire from "geofire";
 import { connect } from "react-redux";
@@ -10,6 +10,10 @@ const mapDispatchToProps = dispatch => {
   return {
     geocode: address => dispatch(geocode(address))
   };
+};
+
+const mapStateToProps = state => {
+  return { latLng: [state.geocodeReducer.lat, state.geocodeReducer.lng] };
 };
 
 const FormItem = Form.Item;
@@ -23,35 +27,15 @@ class AddFarm extends Component {
   handleSubmit = event => {
     event.preventDefault();
     const geofire = new GeoFire(locationRef);
-    this.props.form.validateFieldsAndScroll((err, values) => {
+    this.props.form.validateFieldsAndScroll(async (err, values) => {
       if (!err) {
         let loc = values["location"];
-        let url = `https://maps.googleapis.com/maps/api/geocode/json?address=${loc}&key=${GEOCODE_KEY}`;
+        await this.props.geocode(loc);
         let key = farmRef.push(values).key;
-        fetch(url)
-          .then(resp => resp.json())
-          .then(data => {
-            if (data.status === "OK") {
-              geofire
-                .set(key, [
-                  data.results[0].geometry.location.lat,
-                  data.results[0].geometry.location.lng
-                ])
-                .then(
-                  function() {
-                    console.log("Success!");
-                  },
-                  function(error) {
-                    console.log("Error: " + error);
-                  }
-                );
-            } else {
-              alert(
-                "Geocode was not successful for the following reason: " +
-                  data.status
-              );
-            }
-          });
+        console.log(this.props.latLng);
+        geofire.set(key, this.props.latLng);
+        notification.open({ message: "Farm Submitted!" });
+        this.props.form.resetFields();
       }
     });
   };
@@ -145,7 +129,7 @@ class AddFarm extends Component {
 }
 
 const WrappedAddFarm = connect(
-  null,
+  mapStateToProps,
   mapDispatchToProps
 )(Form.create()(AddFarm));
 

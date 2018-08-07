@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { Button, Form, Input, Select } from "antd";
+import { Button, Form, Input, Select, Icon } from "antd";
 
 const FormItem = Form.Item;
 const Option = Select.Option;
@@ -41,7 +41,18 @@ class UserAddr extends Component {
                   type: "string"
                 }
               ]
-            })(<Input style={{ width: 300 }} placeholder="Address" />)}
+            })(
+              <Input
+                prefix={
+                  <Icon
+                    type="environment"
+                    style={{ color: "rgba(0,0,0,.25)" }}
+                  />
+                }
+                style={{ width: 300 }}
+                placeholder="Address"
+              />
+            )}
           </FormItem>
           <FormItem>
             {getFieldDecorator("range", { initialValue: "10" })(
