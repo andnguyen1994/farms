@@ -1,18 +1,15 @@
-import React, { Component } from "react";
-import { farmRef, locationRef, offeringsRef } from "API/databases.js";
+import React, { Component } from 'react'
+// import { farmRef, locationRef, offeringsRef } from 'API/databases.js';
 
 class FarmInfo extends Component {
-  constructor(props) {
-    super(props);
-  }
-  render() {
-    const number = this.props.match.params.number;
+  render () {
+    const key = this.props.match.params.KEY
     return (
       <div>
-        <h1>{number}</h1>
+        <h1>{key}</h1>
       </div>
-    );
+    )
   }
 }
 
-export default FarmInfo;
+export default FarmInfo

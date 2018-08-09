@@ -1,10 +1,9 @@
-import React, { Component } from "react";
-import { Button, Form, Input, notification } from "antd";
-import { farmRef, locationRef } from "API/databases.js";
-import GeoFire from "geofire";
-import { connect } from "react-redux";
-import { geocode } from "../Actions/Geocode";
-import GEOCODE_KEY from "../API/GoogleConfig";
+import React, { Component } from 'react';
+import { Button, Form, Input, notification } from 'antd';
+import { farmRef, locationRef } from 'API/databases.js';
+import GeoFire from 'geofire';
+import { connect } from 'react-redux';
+import { geocode } from 'actions/Geocode';
 
 const mapDispatchToProps = dispatch => {
   return {
@@ -29,12 +28,12 @@ class AddFarm extends Component {
     const geofire = new GeoFire(locationRef);
     this.props.form.validateFieldsAndScroll(async (err, values) => {
       if (!err) {
-        let loc = values["location"];
+        let loc = values['location'];
         await this.props.geocode(loc);
         let key = farmRef.push(values).key;
         console.log(this.props.latLng);
         geofire.set(key, this.props.latLng);
-        notification.open({ message: "Farm Submitted!" });
+        notification.open({ message: 'Farm Submitted!' });
         this.props.form.resetFields();
       }
     });
@@ -71,10 +70,10 @@ class AddFarm extends Component {
       <div>
         <Form onSubmit={this.handleSubmit}>
           <FormItem {...formItemLayout} label="Name">
-            {getFieldDecorator("name", {
+            {getFieldDecorator('name', {
               rules: [
                 {
-                  type: "string"
+                  type: 'string'
                 },
                 {
                   required: true
@@ -83,24 +82,24 @@ class AddFarm extends Component {
             })(<Input />)}
           </FormItem>
           <FormItem {...formItemLayout} label="E-mail">
-            {getFieldDecorator("email", {
+            {getFieldDecorator('email', {
               rules: [
                 {
-                  type: "email",
-                  message: "The input is not valid E-mail!"
+                  type: 'email',
+                  message: 'The input is not valid E-mail!'
                 },
                 {
                   required: true,
-                  message: "Please input your E-mail!"
+                  message: 'Please input your E-mail!'
                 }
               ]
             })(<Input />)}
           </FormItem>
           <FormItem {...formItemLayout} label="Address">
-            {getFieldDecorator("location", {
+            {getFieldDecorator('location', {
               rules: [
                 {
-                  type: "string"
+                  type: 'string'
                 },
                 {
                   required: true
@@ -109,10 +108,10 @@ class AddFarm extends Component {
             })(<Input />)}
           </FormItem>
           <FormItem {...formItemLayout} label="Website">
-            {getFieldDecorator("website", {
+            {getFieldDecorator('website', {
               rules: [
                 {
-                  type: "string"
+                  type: 'string'
                 }
               ]
             })(<Input />)}

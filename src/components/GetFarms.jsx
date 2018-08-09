@@ -1,50 +1,52 @@
-import React, { Component } from "react";
-import { connect } from "react-redux";
-import { withRouter } from "react-router";
-import { Table } from "antd";
-import updateTableData from "Scripts/updateTableData.jsx";
+import React, { Component } from 'react'
+import { Table, Alert } from 'antd'
 
 class GetFarms extends Component {
-  constructor(props) {
-    super(props);
-  }
-
-  //TODO: add columns, fix sort
-  render() {
+  // TODO: add columns, fix sort
+  render () {
     const columns = [
       {
-        title: "Name",
-        dataIndex: "name",
-        key: "name",
+        title: 'Name',
+        dataIndex: 'name',
+        key: 'name',
         sorter: (a, b) => a.name.length - b.name.length
       },
       {
-        title: "E-mail",
-        dataIndex: "email",
-        key: "email"
+        title: 'E-mail',
+        dataIndex: 'email',
+        key: 'email'
       },
       {
-        title: "Location",
-        dataIndex: "location",
-        key: "location"
+        title: 'Location',
+        dataIndex: 'location',
+        key: 'location'
       },
       {
-        title: "Website",
-        dataIndex: "website",
-        key: "website"
+        title: 'Website',
+        dataIndex: 'website',
+        key: 'website'
       }
-    ];
+    ]
 
-    return (
-      <div>
-        <Table
-          bordered={true}
-          dataSource={this.props.farmsTableData}
-          columns={columns}
-        />
-      </div>
-    );
+    const renderValue = () => {
+      if (this.props.error) {
+        return <Alert message={this.props.error} type='error' />
+      } else if (this.props.farmsTableData.length === 0) {
+        // TODO: fix this
+        return <Alert message='There are no farms in range' type='warning' />
+      } else {
+        return (
+          <Table
+            bordered
+            dataSource={this.props.farmsTableData}
+            columns={columns}
+          />
+        )
+      }
+    }
+
+    return <div>{renderValue()}</div>
   }
 }
 
-export default GetFarms;
+export default GetFarms
