@@ -1,83 +1,52 @@
-import React, { Component } from "react";
-import firebase from "../firebase.js";
-import { Table, Button } from "antd";
-
-const farmRef = firebase.database().ref("Farms");
+import React, { Component } from 'react'
+import { Table, Alert } from 'antd'
 
 class GetFarms extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      farms: [],
-      locations: []
-    };
-  }
-
-  componentDidMount() {
-    //getting farm data
-    farmRef.on("value", snapshot => {
-      let farms = snapshot.val();
-      let newState = [];
-      if (this.props.locations.length === 0) {
-        for (let farm in farms) {
-          newState.push({
-            key: farm,
-            name: farms[farm].name,
-            email: farms[farm].email,
-            location: farms[farm].location,
-            website: farms[farm].website
-          });
-        }
-      } else {
-        for (let i in this.props.locations) {
-          let key = this.props.locations[i];
-          newState.push({
-            key: key,
-            name: farms[key].name,
-            email: farms[key].email,
-            location: farms[key].location,
-            website: farms[key].website
-          });
-        }
-      }
-      this.setState({ farms: newState });
-    });
-  }
-
-  render() {
+  // TODO: add columns, fix sort
+  render () {
     const columns = [
       {
-        title: "Name",
-        dataIndex: "name",
-        key: "name",
+        title: 'Name',
+        dataIndex: 'name',
+        key: 'name',
         sorter: (a, b) => a.name.length - b.name.length
       },
       {
-        title: "E-mail",
-        dataIndex: "email",
-        key: "email"
+        title: 'E-mail',
+        dataIndex: 'email',
+        key: 'email'
       },
       {
-        title: "Location",
-        dataIndex: "location",
-        key: "location"
+        title: 'Location',
+        dataIndex: 'location',
+        key: 'location'
       },
       {
-        title: "Website",
-        dataIndex: "website",
-        key: "website"
+        title: 'Website',
+        dataIndex: 'website',
+        key: 'website'
       }
-    ];
-    return (
-      <div>
-        <Table
-          bordered={true}
-          dataSource={this.state.farms}
-          columns={columns}
-        />
-      </div>
-    );
+    ]
+
+    const renderValue = () => {
+      if (this.props.error) {
+        return <Alert message={this.props.error} type='error' />
+      } else if (this.props.farmsTableData.length === 0) {
+        // TODO: fix this
+        return <Alert message='There are no farms in range' type='warning' />
+      } else {
+        return (
+          <Table
+            bordered
+            dataSource={this.props.farmsTableData}
+            columns={columns}
+          />
+        )
+      }
+    }
+
+    return <div>{renderValue()}</div>
   }
 }
 
-export default GetFarms;
+export default GetFarms

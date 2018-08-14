@@ -1,7 +1,19 @@
-import React, { Component } from "react";
-import { Button, Form, Input } from "antd";
-import firebase from "../firebase.js";
-import GeoFire from "geofire";
+import React, { Component } from 'react';
+import { Button, Form, Input, notification } from 'antd';
+import { farmRef, locationRef } from 'API/databases.js';
+import GeoFire from 'geofire';
+import { connect } from 'react-redux';
+import { geocode } from 'actions/Geocode';
+
+const mapDispatchToProps = dispatch => {
+  return {
+    geocode: address => dispatch(geocode(address))
+  };
+};
+
+const mapStateToProps = state => {
+  return { latLng: [state.geocodeReducer.lat, state.geocodeReducer.lng] };
+};
 
 const FormItem = Form.Item;
 
@@ -10,39 +22,19 @@ class AddFarm extends Component {
     super(props);
     this.state = {};
   }
-
+  //TODO: find a way to differentiate geocode request here vs userAddress, add items to list
   handleSubmit = event => {
     event.preventDefault();
-    const farmRef = firebase.database().ref("Farms");
-    const geofire = new GeoFire(firebase.database().ref("Locations"));
-    this.props.form.validateFieldsAndScroll((err, values) => {
+    const geofire = new GeoFire(locationRef);
+    this.props.form.validateFieldsAndScroll(async (err, values) => {
       if (!err) {
-        let loc = values["location"];
+        let loc = values['location'];
+        await this.props.geocode(loc);
         let key = farmRef.push(values).key;
-        this.props.geocoder.geocode({ address: loc }, function(
-          results,
-          status
-        ) {
-          if (status === "OK") {
-            geofire
-              .set(key, [
-                results[0].geometry.location.lat(),
-                results[0].geometry.location.lng()
-              ])
-              .then(
-                function() {
-                  console.log("Success!");
-                },
-                function(error) {
-                  console.log("Error: " + error);
-                }
-              );
-          } else {
-            alert(
-              "Geocode was not successful for the following reason: " + status
-            );
-          }
-        });
+        console.log(this.props.latLng);
+        geofire.set(key, this.props.latLng);
+        notification.open({ message: 'Farm Submitted!' });
+        this.props.form.resetFields();
       }
     });
   };
@@ -78,10 +70,10 @@ class AddFarm extends Component {
       <div>
         <Form onSubmit={this.handleSubmit}>
           <FormItem {...formItemLayout} label="Name">
-            {getFieldDecorator("name", {
+            {getFieldDecorator('name', {
               rules: [
                 {
-                  type: "string"
+                  type: 'string'
                 },
                 {
                   required: true
@@ -90,24 +82,24 @@ class AddFarm extends Component {
             })(<Input />)}
           </FormItem>
           <FormItem {...formItemLayout} label="E-mail">
-            {getFieldDecorator("email", {
+            {getFieldDecorator('email', {
               rules: [
                 {
-                  type: "email",
-                  message: "The input is not valid E-mail!"
+                  type: 'email',
+                  message: 'The input is not valid E-mail!'
                 },
                 {
                   required: true,
-                  message: "Please input your E-mail!"
+                  message: 'Please input your E-mail!'
                 }
               ]
             })(<Input />)}
           </FormItem>
           <FormItem {...formItemLayout} label="Address">
-            {getFieldDecorator("location", {
+            {getFieldDecorator('location', {
               rules: [
                 {
-                  type: "string"
+                  type: 'string'
                 },
                 {
                   required: true
@@ -116,10 +108,10 @@ class AddFarm extends Component {
             })(<Input />)}
           </FormItem>
           <FormItem {...formItemLayout} label="Website">
-            {getFieldDecorator("website", {
+            {getFieldDecorator('website', {
               rules: [
                 {
-                  type: "string"
+                  type: 'string'
                 }
               ]
             })(<Input />)}
@@ -135,6 +127,9 @@ class AddFarm extends Component {
   }
 }
 
-const WrappedAddFarm = Form.create()(AddFarm);
+const WrappedAddFarm = connect(
+  mapStateToProps,
+  mapDispatchToProps
+)(Form.create()(AddFarm));
 
 export default WrappedAddFarm;
