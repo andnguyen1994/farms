@@ -40,6 +40,7 @@ class GetFarms extends Component {
             bordered
             dataSource={this.props.farmsTableData}
             columns={columns}
+            pagination={false}
           />
         )
       }

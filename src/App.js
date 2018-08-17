@@ -3,46 +3,49 @@ import { Router, Route, Switch } from 'react-router-dom'
 import 'App.css'
 import history from 'History.jsx'
 import { Layout } from 'antd'
-import NavBar from 'components/NavBar'
-import WrappedAddFarm from 'components/AddFarm.jsx'
-import ConnectedTableWrapper from 'containers/TableWrapper'
-import ConnectedUserAddr from 'containers/UserAddrWrapper'
-import FarmInfo from 'components/FarmInfo.jsx'
+import WrappedAddFarm from 'containers/FarmRegistrationWrapped'
+import ConnectedTableWrapper from 'containers/SearchResultsWrapped'
+import AddressQuery from 'containers/AddressQueryWrapped'
+import FarmInfoWrapper from 'containers/FarmDetailsWrapped'
+import NavBar from 'containers/NavBarWrapped'
 
 const { Header, Content, Footer } = Layout
 
 class App extends Component {
   render () {
     const divStyle = {
-      background: '#fff',
-      padding: 24,
       minHeight: 280,
-      textAlign: 'center'
+      height: '100%',
+      textAlign: 'center',
+      backgroundColor: 'white',
+      fontFamily: 'PT Sans Caption'
     }
+
+    const contentStyle = { height: '100%' }
+
     return (
       <Router history={history}>
         <Layout className='layout'>
-          <Header>
+          <Header style={{ backgroundColor: 'white', padding: 0 }}>
             <NavBar />
           </Header>
-          <Content style={{ padding: '0 50px' }}>
+          <Content style={contentStyle}>
             <div style={divStyle}>
               <Switch>
                 <Route
                   exact
                   path='/'
-                  render={() => <ConnectedUserAddr version='Main' />}
+                  render={() => <AddressQuery version='Main' />}
                 />
-                <Route
-                  path='/Search/:location'
-                  component={ConnectedTableWrapper}
-                />
+                <Route path='/Search/query' component={ConnectedTableWrapper} />
                 <Route path='/AddFarm' component={WrappedAddFarm} />
-                <Route path='/Farms/key=:KEY' component={FarmInfo} />
+                <Route path='/Farms/key=:KEY' component={FarmInfoWrapper} />
               </Switch>
             </div>
           </Content>
-          <Footer style={{ textAlign: 'center' }} />
+          <Footer
+            style={{ textAlign: 'center', backgroundColor: 'light grey' }}
+          />
         </Layout>
       </Router>
     )

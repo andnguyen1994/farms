@@ -1,10 +1,12 @@
 import React, { Component } from 'react'
 import { connect } from 'react-redux'
-import { Link } from 'react-router-dom'
+import { Link, withRouter } from 'react-router-dom'
 import { farmRef, locationRef } from 'API/databases.js'
 import GeoFire from 'geofire'
 import setGeoQuery from 'actions/Geoquery'
-import GetFarms from 'components/GetFarms'
+//import GetFarms from 'components/GetFarms'
+import DisplayTable from 'components/SearchResults/DisplayTable'
+import queryString from 'query-string'
 
 const mapStateToProps = state => {
   return {
@@ -23,7 +25,7 @@ class TableWrapper extends Component {
   constructor(props) {
     super(props)
     this.geoQuery = ''
-    this.location = this.userCoords()
+    this.userLocation = this.userCoords()
     this.state = {
       keys: [],
       rawFarmData: [],
@@ -34,18 +36,24 @@ class TableWrapper extends Component {
   // TODO: clean up function
   // Takes location from URL and returns object containing location information
   userCoords = () => {
-    const S = this.props.match.params.location
-    const lat = Number(S.substring(S.indexOf('LAT=') + 4, S.indexOf('&LNG')))
-    const lng = Number(S.substring(S.indexOf('&LNG=') + 5, S.indexOf('&ADDR')))
-    const address = S.substring(S.indexOf('&ADDR=') + 6, S.indexOf('&RAD='))
-    const rad = Number(S.substring(S.indexOf('&RAD=') + 5))
-    this.props.updateQueryInfo('NEW_GEOQUERY', address, [lat, lng], rad)
-    return { userCoords: [lat, lng], address: address, rad: rad }
+    let userLocation = queryString.parse(this.props.location.search)
+    userLocation.userCoords = [
+      Number(userLocation.latitude),
+      Number(userLocation.longitude)
+    ]
+    userLocation.range = Number(userLocation.range)
+    this.props.updateQueryInfo(
+      'NEW_GEOQUERY',
+      userLocation.address,
+      userLocation.userCoords,
+      userLocation.range
+    )
+    return userLocation
   }
-
+  //Can we optimize geolocation by setting pointers to keys with same location ie. multiple places are at seattle, map locations in farms to key
   componentDidMount() {
     //On receiving updated snapshot, update the local database in state
-    if (this.props.failure || !this.location.address) {
+    if (this.props.failure || !this.userLocation.address) {
       this.setState({ error: 'Please enter a valid location' })
     } else {
       farmRef.on('value', snapshot => {
@@ -53,8 +61,8 @@ class TableWrapper extends Component {
         this.setState({ rawFarmData: farms })
       })
       this.geoQuery = new GeoFire(locationRef).query({
-        center: this.location.userCoords,
-        radius: this.location.rad
+        center: this.userLocation.userCoords,
+        radius: this.userLocation.range
       })
       this.geoQuery.on('key_entered', (key, location, distance) => {
         this.setState({ keys: this.state.keys.concat({ key, distance }) })
@@ -63,19 +71,19 @@ class TableWrapper extends Component {
   }
 
   componentDidUpdate(prevProps) {
-    if (this.props.match.params.location !== prevProps.match.params.location) {
-      if (this.props.failure || !this.location.address) {
+    if (this.props.location.search !== prevProps.location.search) {
+      if (this.props.failure || !this.userLocation.address) {
         this.setState({ error: 'Please enter a valid location' })
       } else {
         this.setState({ error: '' })
-        this.location = this.userCoords() //Gets new location
+        this.userLocation = this.userCoords() //Gets new location
         if (this.geoQuery) {
           this.geoQuery.cancel()
           this.setState({ keys: [] })
         }
         this.geoQuery = new GeoFire(locationRef).query({
-          center: this.location.userCoords,
-          radius: this.location.rad
+          center: this.userLocation.userCoords,
+          radius: this.userLocation.range
         })
         this.geoQuery.on('key_entered', (key, location, distance) => {
           this.setState({ keys: this.state.keys.concat({ key, distance }) })
@@ -110,22 +118,29 @@ class TableWrapper extends Component {
         distance: this.state.keys[i].distance
       })
     }
+    console.log(farmsTableData)
     return farmsTableData
   }
 
   render() {
+    return <DisplayTable farmsTableData={this.getFarmsTableData()} />
+  }
+
+  /*3render() {
     return (
       <GetFarms
         farmsTableData={this.getFarmsTableData()}
         error={this.state.error}
       />
     )
-  }
+  }*/
 }
 
-const ConnectedTableWrapper = connect(
-  mapStateToProps,
-  mapDispatchToProps
-)(TableWrapper)
+const ConnectedTableWrapper = withRouter(
+  connect(
+    mapStateToProps,
+    mapDispatchToProps
+  )(TableWrapper)
+)
 
 export default ConnectedTableWrapper

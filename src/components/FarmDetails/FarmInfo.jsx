@@ -3,10 +3,12 @@ import React, { Component } from 'react'
 
 class FarmInfo extends Component {
   render () {
-    const key = this.props.match.params.KEY
     return (
       <div>
-        <h1>{key}</h1>
+        <h1>{this.props.farm.name}</h1>
+        <h1>{this.props.farm.email}</h1>
+        <h1>{this.props.farm.website}</h1>
+        <h1>{this.props.farm.location}</h1>
       </div>
     )
   }
