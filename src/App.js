@@ -1,7 +1,7 @@
 import React, { Component } from 'react'
 import { Router, Route, Switch } from 'react-router-dom'
 import 'App.css'
-import history from 'History.jsx'
+import history from 'HistoryConfig'
 import { Layout } from 'antd'
 import WrappedAddFarm from 'containers/FarmRegistrationWrapped'
 import ConnectedTableWrapper from 'containers/SearchResultsWrapped'

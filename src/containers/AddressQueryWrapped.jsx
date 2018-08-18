@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import history from 'History'
+import history from 'HistoryConfig'
 import { connect } from 'react-redux'
 import { withRouter } from 'react-router'
 import { geocode } from 'actions/Geocode'

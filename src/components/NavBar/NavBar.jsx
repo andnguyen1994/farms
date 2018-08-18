@@ -1,7 +1,7 @@
 import React, { Component } from 'react'
 import AddressQuery from 'containers/AddressQueryWrapped'
 import { withRouter } from 'react-router-dom'
-import history from 'History'
+import history from 'HistoryConfig'
 import styled from 'styled-components'
 
 const OuterDiv = styled.div`
